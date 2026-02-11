@@ -20,7 +20,8 @@ def starfield(lines=1):
 
 def status(pemain):
     weapon = pemain.get('weapon', {'name':'Tangan Kosong', 'bonus':0})
-    slow(f"[STATUS] HP: {pemain['hp']}  ATK: {pemain['atk']} (+{weapon.get('bonus',0)})  NYAWA: {pemain['nyawa']} ⭐  SENJATA: {weapon.get('name','Tangan Kosong')}")
+    luck = pemain.get('luck', 0)
+    slow(f"[STATUS] HP: {pemain['hp']}  ATK: {pemain['atk']} (+{weapon.get('bonus',0)})  NYAWA: {pemain['nyawa']} ⭐  SENJATA: {weapon.get('name','Tangan Kosong')}  LUCK: {luck}")
 
 def choose_weapon(pemain):
     slow('\n🔧 Pilih senjata untuk pertempuranmu (membayar dengan nyawa):')
@@ -51,8 +52,12 @@ def choose_weapon(pemain):
         cost = 10
         pemain['weapon'] = {'name': 'Laser Blaster', 'bonus': 2, 'acc': 0.92, 'crit': 0.05}
 
-    pemain['nyawa'] -= cost
-    slow(f"Kamu membayar {cost} nyawa untuk membeli {pemain['weapon']['name']}. Sisa nyawa: {pemain['nyawa']}")
+    # elemen keberuntungan mempengaruhi harga (bisa lebih murah/mahal)
+    luck = pemain.get('luck', 0)
+    delta = random.randint(-luck//2, luck//2)
+    adjusted = max(0, cost + delta)
+    pemain['nyawa'] -= adjusted
+    slow(f"Keteruntunganmu: {luck}. Harga asli {cost}, penyesuaian {delta}, bayar {adjusted} nyawa untuk {pemain['weapon']['name']}. Sisa nyawa: {pemain['nyawa']}")
     if pemain['nyawa'] <= 0:
         slow('💀 Nyawa habis setelah membeli senjata... Petualangan berakhir.')
         return False
@@ -97,9 +102,14 @@ def pertarungan(pemain, musuh_nama, musuh_hp, musuh_atk):
             continue
 
         if musuh_hp > 0:
-            dmg_m = max(1, musuh_atk + random.randint(-1, 2))
-            pemain['hp'] -= dmg_m
-            slow(f"{musuh_nama} membalas dan memberi {dmg_m} kerusakan. (HP kamu: {pemain['hp']})")
+            # peluang mengelak berdasarkan luck
+            evade_chance = min(0.5, pemain.get('luck', 0) * 0.02)
+            if random.random() < evade_chance:
+                slow('🍀 Beruntung! Kamu mengelak dari serangan musuh.')
+            else:
+                dmg_m = max(1, musuh_atk + random.randint(-1, 2))
+                pemain['hp'] -= dmg_m
+                slow(f"{musuh_nama} membalas dan memberi {dmg_m} kerusakan. (HP kamu: {pemain['hp']})")
 
     if pemain['hp'] > 0:
         slow(f"🏆 {musuh_nama} dikalahkan!")
@@ -119,7 +129,7 @@ def game_utama():
     nama = input("Masukkan nama MC kamu: ").strip() or 'MC'
     slow(f"Selamat datang, {nama}. Misimu: temukan Canopus dan pulang hidup-hidup.")
 
-    pemain = {'hp': 40, 'atk': 6, 'nyawa': 100}
+    pemain = {'hp': 40, 'atk': 6, 'nyawa': 100, 'luck': random.randint(1, 10)}
     status(pemain)
     if not choose_weapon(pemain):
         return
@@ -154,6 +164,17 @@ def game_utama():
             ('Guerilla Mars', 12, 5),
             ('Behemoth Kecil', 14, 6)
         ]
+
+    # elemen keberuntungan: kemungkinan menemukan cache atau menghadapi ambush acak
+    event_roll = random.random()
+    luck = pemain.get('luck', 0)
+    if event_roll < 0.15 + luck * 0.01:
+        slow('\n✨ Keberuntungan! Kamu menemukan Nebula Cache yang menyembuhkan 10 HP.')
+        pemain['hp'] = min(40, pemain['hp'] + 10)
+        status(pemain)
+    elif event_roll > 0.95 - luck * 0.01:
+        slow('\n⚠️ Malang! Kamu terkena ambush tambahan saat memasuki dungeon.')
+        encounters.insert(0, ('Skirmisher Nebula', 8, 4))
 
     slow('\n-- Perjalanan Dimulai --')
     for nama_m, hp_m, atk_m in encounters:
