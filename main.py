@@ -13,8 +13,50 @@ def header():
     slow('   ✨ PETUALANGAN ANTARIKSA: MENCARI BINTANG CANOPUS ✨', 0.005)
     print('👾' + '-'*50 + '👾')
 
+def starfield(lines=1):
+    for _ in range(lines):
+        row = ''.join(random.choice([' ', '.', '*', ' ']) for _ in range(60))
+        print(' ' + row)
+
 def status(pemain):
-    slow(f"[STATUS] HP: {pemain['hp']}  ATK: {pemain['atk']}  NYAWA: {pemain['nyawa']} ⭐")
+    weapon = pemain.get('weapon', {'name':'Tangan Kosong', 'bonus':0})
+    slow(f"[STATUS] HP: {pemain['hp']}  ATK: {pemain['atk']} (+{weapon.get('bonus',0)})  NYAWA: {pemain['nyawa']} ⭐  SENJATA: {weapon.get('name','Tangan Kosong')}")
+
+def choose_weapon(pemain):
+    slow('\n🔧 Pilih senjata untuk pertempuranmu (membayar dengan nyawa):')
+    slow("1) Laser Blaster 🔫  (ATK +2, akurasi 92%, biaya nyawa 10)")
+    slow("2) Plasma Rifle ⚡ (ATK +4, akurasi 78%, biaya nyawa 20)")
+    slow("3) Ion Cutter 🗡️  (ATK +3, crit 15%, biaya nyawa 15)")
+    pilih = input("Masukkan nomor senjata pilihan (1/2/3): ").strip()
+    if pilih == '1':
+        cost = 10
+        pemain['weapon'] = {'name': 'Laser Blaster', 'bonus': 2, 'acc': 0.92, 'crit': 0.05}
+        slow('Laser Blaster siap. Cahaya biru menyala di larasmu.')
+    elif pilih == '2':
+        cost = 20
+        pemain['weapon'] = {'name': 'Plasma Rifle', 'bonus': 4, 'acc': 0.78, 'crit': 0.08}
+        slow('Plasma Rifle mengaum, inti panas berdenyut.')
+    elif pilih == '3':
+        cost = 15
+        pemain['weapon'] = {'name': 'Ion Cutter', 'bonus': 3, 'acc': 0.85, 'crit': 0.15}
+        slow('Ion Cutter bergetar, siap memotong perisai musuh.')
+    else:
+        slow('Pilihan senjata tidak valid! Kamu kehilangan fokus saat memilih.')
+        pemain['nyawa'] -= 20
+        slow(f"Nyawa berkurang 20. Sisa nyawa: {pemain['nyawa']}")
+        if pemain['nyawa'] <= 0:
+            slow('💀 Nyawa habis... Petualangan berakhir.')
+            return False
+        slow('Default: Laser Blaster dipasang secara otomatis.')
+        cost = 10
+        pemain['weapon'] = {'name': 'Laser Blaster', 'bonus': 2, 'acc': 0.92, 'crit': 0.05}
+
+    pemain['nyawa'] -= cost
+    slow(f"Kamu membayar {cost} nyawa untuk membeli {pemain['weapon']['name']}. Sisa nyawa: {pemain['nyawa']}")
+    if pemain['nyawa'] <= 0:
+        slow('💀 Nyawa habis setelah membeli senjata... Petualangan berakhir.')
+        return False
+    return True
 
 def pertarungan(pemain, musuh_nama, musuh_hp, musuh_atk):
     slow(f"\n⚔️  Bertemu: {musuh_nama} (HP {musuh_hp}, ATK {musuh_atk})")
@@ -22,9 +64,17 @@ def pertarungan(pemain, musuh_nama, musuh_hp, musuh_atk):
         status(pemain)
         aksi = input("Aksi kamu (serang / bertahan / kabur): ").strip().lower()
         if aksi == 'serang':
-            dmg = max(1, pemain['atk'] + random.randint(-2, 2))
-            musuh_hp -= dmg
-            slow(f"➡️  Kamu menyerang {musuh_nama} dan memberi {dmg} kerusakan.")
+            weapon = pemain.get('weapon', {'name':'Tangan Kosong','bonus':0,'acc':1.0,'crit':0})
+            if random.random() <= weapon.get('acc', 1.0):
+                base = pemain['atk'] + weapon.get('bonus', 0)
+                dmg = max(1, base + random.randint(-2, 2))
+                if random.random() < weapon.get('crit', 0):
+                    dmg = int(dmg * 1.75)
+                    slow('🔥 Serangan Kritis!')
+                musuh_hp -= dmg
+                slow(f"➡️  Kamu menyerang {musuh_nama} dengan {weapon['name']} dan memberi {dmg} kerusakan.")
+            else:
+                slow('✨ Serangan meleset karena gangguan ruang-waktu!')
         elif aksi == 'bertahan' or aksi == 'defend':
             slow("🛡️  Kamu bertahan, mengurangi serangan musuh berikutnya.")
             dmg_m = max(0, musuh_atk + random.randint(-1, 1) - 3)
@@ -70,6 +120,9 @@ def game_utama():
     slow(f"Selamat datang, {nama}. Misimu: temukan Canopus dan pulang hidup-hidup.")
 
     pemain = {'hp': 40, 'atk': 6, 'nyawa': 100}
+    status(pemain)
+    if not choose_weapon(pemain):
+        return
     status(pemain)
 
     slow("\nDi mulut dungeon, ada dua jalur bercabang:")
