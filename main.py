@@ -200,7 +200,15 @@ def game_utama():
 
 if __name__ == "__main__":
     try:
-        game_utama()
+        while True:
+            game_utama()
+            again = input("\nMain lagi? (y/n): ").strip().lower()
+            if again and again[0] == 'y':
+                slow('\nMemulai ulang permainan...\n')
+                continue
+            else:
+                slow('\nTerima kasih telah bermain. Sampai jumpa!')
+                break
     except KeyboardInterrupt:
         slow('\nPermainan dihentikan. Sampai nanti, penjelajah!')
         sys.exit(0)
