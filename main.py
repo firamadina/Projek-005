@@ -18,6 +18,36 @@ def starfield(lines=1):
         row = ''.join(random.choice([' ', '.', '*', ' ']) for _ in range(60))
         print(' ' + row)
 
+def print_table(title, rows):
+    # Build a neat box-drawn table. Rows can have varying column counts.
+    rows = [tuple(r) for r in rows]
+    col_count = max(len(r) for r in rows)
+    # compute widths per column
+    col_widths = [0] * col_count
+    for r in rows:
+        for i, cell in enumerate(r):
+            col_widths[i] = max(col_widths[i], len(str(cell)))
+
+    # sample line to calculate inner width
+    sample = '│ ' + ' │ '.join(' ' * w for w in col_widths) + ' │'
+    inner_width = len(sample) - 2
+
+    top = '╔' + '═' * inner_width + '╗'
+    title_line = '║' + str(title).center(inner_width) + '║'
+    sep = '╠' + '═' * inner_width + '╣'
+    bottom = '╚' + '═' * inner_width + '╝'
+
+    print('\n' + top)
+    print(title_line)
+    print(sep)
+
+    for r in rows:
+        cells = [str(c) for c in r]
+        line = '║ ' + ' │ '.join(cells[i].ljust(col_widths[i]) if i < len(cells) else ' ' * col_widths[i] for i in range(col_count)) + ' ║'
+        print(line)
+
+    print(bottom + '\n')
+
 def status(pemain):
     weapon = pemain.get('weapon', {'name':'Tangan Kosong', 'bonus':0})
     luck = pemain.get('luck', 0)
@@ -123,16 +153,32 @@ def pertarungan(pemain, musuh_nama, musuh_hp, musuh_atk):
 
 def game_utama():
     header()
-    slow("Di masa depan, galaksi terpecah oleh perang korporasi antarplanet.")
-    slow("Kamu adalah MC — seorang penjelajah yang ditugaskan memasuki dungeon ruang angkasa")
-    slow("yang konon menyimpan bintang legendaris: Canopus. Tanpa Canopus, stasiunmu akan hancur.")
+    # Tampilkan briefing misi dengan emotikon imut
+    print_table('Misi Briefing  ʕ•ᴥ•ʔ', [
+        ("Peran", "Penjelajah MC"),
+        ("Target", "Bintang Canopus"),
+        ("Hadiah", "Ketenaran & Salvage"),
+    ])
+    slow("🌌 Di masa depan, galaksi terpecah oleh perang korporasi antarplanet.")
+    slow("Kamu adalah MC — seorang penjelajah yang ditugaskan memasuki dungeon luar angkasa penuh alien.")
+    slow("Di ujung dungeon menunggu Raja Alien, Taurus. Kalahkan dia untuk mendapatkan Canopus.")
     nama = input("Masukkan nama MC kamu: ").strip() or 'MC'
-    slow(f"Selamat datang, {nama}. Misimu: temukan Canopus dan pulang hidup-hidup.")
+    slow(f"Selamat datang, {nama} ✨. Persiapkan dirimu, petualangan dimulai sekarang!")
 
     pemain = {'hp': 40, 'atk': 6, 'nyawa': 100, 'luck': random.randint(1, 10)}
     status(pemain)
+    # Pemain memilih senjata (biaya nyawa berlaku)
     if not choose_weapon(pemain):
         return
+    # Ringkasan pemain setelah memilih senjata (tabel kecil imut)
+    print_table('Ringkasan Awal', [
+        ("Nama", nama),
+        ("HP", pemain['hp']),
+        ("ATK", f"{pemain['atk']} (+{pemain.get('weapon',{}).get('bonus',0)})"),
+        ("NYAWA", pemain['nyawa']),
+        ("LUCK", pemain['luck']),
+        ("SENJATA", pemain.get('weapon',{}).get('name','Tangan Kosong'))
+    ])
     status(pemain)
 
     slow("\nDi mulut dungeon, ada dua jalur bercabang:")
